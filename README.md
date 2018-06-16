@@ -7,6 +7,7 @@ Build web app from scratch.
 
 Functionalities:
 - To Do List
+- World Cup Calendar
 
 
 <hr>
