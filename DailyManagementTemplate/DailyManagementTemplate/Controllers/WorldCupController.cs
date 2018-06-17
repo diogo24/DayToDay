@@ -11,28 +11,34 @@ namespace DailyManagementTemplate.Controllers
 {
     public class WorldCupController : Controller
     {
+        private WorldCupViewModel _worldCupModel;
 
-        public IActionResult Index() {
-            var worldCupModel = new WorldCupViewModel();
-
-            GetWorldCupMatches(worldCupModel);
-            worldCupModel.Groups          = GetWorldCupGroups();
-            worldCupModel.EliminationFase = GetEliminationFaseRounds();
-            worldCupModel.NumbertOfRounds = Enum.GetValues(typeof(EliminationFaseRoundEnum)).Length;
-
-            return View(worldCupModel);
+        public WorldCupController()
+        {
+            _worldCupModel = new WorldCupViewModel();
         }
 
-        private void GetWorldCupMatches(WorldCupViewModel worldCupViewModel)
+        public IActionResult Index() {
+            _worldCupModel = new WorldCupViewModel();
+
+            GetWorldCupMatches();
+            //worldCupModel.Groups          = GetWorldCupGroups();
+            //worldCupModel.EliminationFase = GetEliminationFaseRounds();
+            _worldCupModel.NumbertOfRounds = Enum.GetValues(typeof(EliminationFaseRoundEnum)).Length;
+
+            return View(_worldCupModel);
+        }
+
+        private void GetWorldCupMatches()
         {
             var worldCupFileData = ReadFile();
 
-            ParseWorldCupData(worldCupFileData, worldCupViewModel);
+            ParseWorldCupData(worldCupFileData);
 
             //throw new NotImplementedException();
         }
 
-        private void ParseWorldCupData(string worldCupFileData, WorldCupViewModel worldCupViewModel)
+        private void ParseWorldCupData(string worldCupFileData)
         {
             using (var sr = new StringReader(worldCupFileData))
             {
@@ -45,9 +51,9 @@ namespace DailyManagementTemplate.Controllers
                 {
                     var split       = line.Split(',');
                     var day         = split[0];
-                    var date        = split[1];
-                    var match       = split[2];
-                    var matchNumber = int.Parse(split[3]);
+                    var date        = split[1] + split[2];
+                    var match       = split[3];
+                    var matchNumber = int.Parse(split[4]);
 
                     MatchParse(match, matchNumber, day, date);
                 }
@@ -67,6 +73,8 @@ namespace DailyManagementTemplate.Controllers
 
                 groupMatchViewModel.Match.Day  = day;
                 groupMatchViewModel.Match.Date = date;
+
+                _worldCupModel.GroupMatches.Add(groupMatchViewModel);
             }
             else {
 
@@ -79,7 +87,7 @@ namespace DailyManagementTemplate.Controllers
 
             if (startIndex >= 0)
             {
-                var score = match.Substring(startIndex + 1).Remove(')').Split('?');
+                var score = match.Substring(startIndex + 1).Replace(')', ' ').Split('?');
                 matchViewModel.HomeTeamScore = int.Parse(score[0]);
                 matchViewModel.AwayTeamScore = int.Parse(score[1]);
             }
