@@ -53,6 +53,12 @@ namespace DailyManagementTemplate.Models
     }
 
     public class GroupTableViewModel {
+
+        public GroupTableViewModel()
+        {
+            GroupRows = new HashSet<GroupRowViewModel>();
+        }
+
         public ICollection<GroupRowViewModel> GroupRows { get; set; }
 
         public GroupLetterEnum GroupLetter { get; set; }

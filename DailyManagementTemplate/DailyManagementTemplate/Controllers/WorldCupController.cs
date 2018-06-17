@@ -12,17 +12,23 @@ namespace DailyManagementTemplate.Controllers
     public class WorldCupController : Controller
     {
         private WorldCupViewModel _worldCupModel;
+        private Dictionary<GroupLetterEnum, IList<TeamViewModel>> _dicGroupTeams;
 
         public WorldCupController()
         {
             _worldCupModel = new WorldCupViewModel();
+            _dicGroupTeams = new Dictionary<GroupLetterEnum, IList<TeamViewModel>>();
+            foreach (GroupLetterEnum groupLetter in Enum.GetValues(typeof(GroupLetterEnum)))
+            {
+                _dicGroupTeams.Add(groupLetter, new List<TeamViewModel>());
+            }
         }
 
         public IActionResult Index() {
             _worldCupModel = new WorldCupViewModel();
 
             GetWorldCupMatches();
-            //worldCupModel.Groups          = GetWorldCupGroups();
+            GetWorldCupGroups();
             //worldCupModel.EliminationFase = GetEliminationFaseRounds();
             _worldCupModel.NumbertOfRounds = Enum.GetValues(typeof(EliminationFaseRoundEnum)).Length;
 
@@ -75,6 +81,15 @@ namespace DailyManagementTemplate.Controllers
                 groupMatchViewModel.Match.Date = date;
 
                 _worldCupModel.GroupMatches.Add(groupMatchViewModel);
+                var teams = _dicGroupTeams[groupMatchViewModel.GroupLetter];
+                if(!teams.Any(t => t.TeamName == groupMatchViewModel.Match.HomeTeam.TeamName))
+                {
+                    teams.Add(groupMatchViewModel.Match.HomeTeam);
+                }
+                if (!teams.Any(t => t.TeamName == groupMatchViewModel.Match.AwayTeam.TeamName))
+                {
+                    teams.Add(groupMatchViewModel.Match.AwayTeam);
+                }
             }
             else {
 
@@ -138,9 +153,48 @@ namespace DailyManagementTemplate.Controllers
             return result;
         }
 
-        private ICollection<GroupTableViewModel> GetWorldCupGroups()
+        private void GetWorldCupGroups()
         {
-            throw new NotImplementedException();
+            _worldCupModel.Groups = new List<GroupTableViewModel>();
+
+
+            foreach (GroupLetterEnum groupLetter in Enum.GetValues(typeof(GroupLetterEnum)))
+            {
+                var teams = _dicGroupTeams[groupLetter];
+
+                var groupMatchs = _worldCupModel.GroupMatches.Where(s => s.GroupLetter == groupLetter);
+
+                var dicTeamsPoints = teams.ToDictionary(k => k.TeamName, v => 0);
+
+                foreach (var groupMatch in groupMatchs)
+                {
+                    if(groupMatch.Match.HomeTeamScore.HasValue && groupMatch.Match.AwayTeamScore.HasValue) { 
+                        if(groupMatch.Match.HomeTeamScore == groupMatch.Match.AwayTeamScore)
+                        {
+                            dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName] += 1;
+                            dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName] += 1;
+                        }
+                        else if(groupMatch.Match.HomeTeamScore > groupMatch.Match.AwayTeamScore)
+                        {
+                            dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName] += 3;
+                        }
+                        else if (groupMatch.Match.HomeTeamScore < groupMatch.Match.AwayTeamScore)
+                        {
+                            dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName] += 3;
+                        }
+                    }
+                }
+
+                var model = new GroupTableViewModel();
+                model.GroupLetter = groupLetter;
+
+                foreach (var team in dicTeamsPoints.OrderByDescending(s => s.Value))
+                {
+                    model.GroupRows.Add(new GroupRowViewModel { Team = new TeamViewModel { TeamName = team.Key }, Points = team.Value });
+                }                
+
+                _worldCupModel.Groups.Add(model);
+            }
         }
 
         private ICollection<EliminationFaseViewModel> GetEliminationFaseRounds()
