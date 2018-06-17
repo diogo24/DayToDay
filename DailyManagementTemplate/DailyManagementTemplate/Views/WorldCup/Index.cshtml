@@ -1,0 +1,84 @@
+﻿@model WorldCupViewModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h2>World Cup 2018 - Russia</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        @foreach (var groupMatch in Model.GroupMatches)
+        {
+        <ul class="list-inline">
+            <li>@groupMatch.Match.HomeTeam.TeamName</li>
+            <li>@groupMatch.Match.HomeTeamScore</li>
+            <li>vs</li>
+            <li>@groupMatch.Match.AwayTeamScore</li>
+            <li>@groupMatch.Match.AwayTeam.TeamName</li>
+        </ul>
+        }
+    </div>
+    <div class="col-md-4">
+        @foreach (var group in Model.Groups.OrderBy(s => (int)s.GroupLetter))
+        {
+            <h3>@(group.GroupLetter)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Position</th>
+                        <th>Team Name</th>
+                        <th>Games Played</th>
+                        <th>Wins</th>
+                        <th>Draws</th>
+                        <th>Defeats</th>
+                        <th>Goals For</th>
+                        <th>Goals Against</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var groupRow in group.GroupRows.OrderBy(s => s.GroupPosition))
+                    {
+                    <tr>
+                        <td>@((int)groupRow.GroupPosition)</td>
+                        <td>@groupRow.Team.TeamName</td>
+                        <td>@groupRow.GamesPlayed</td>
+                        <td>@groupRow.Wins</td>
+                        <td>@groupRow.Draws</td>
+                        <td>@groupRow.Defeats</td>
+                        <td>@groupRow.GoalsFor</td>
+                        <td>@groupRow.GoalsAgainst</td>
+                        <td>@groupRow.Points</td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="col-md-4">
+        @for (int i = 1; i <= Model.NumbertOfRounds; i++)
+        {
+            <h3>
+                <b>@Enum.GetName(typeof(EliminationFaseRoundEnum), i)</b>
+            </h3>
+            
+                var eliminationRoundValue = (EliminationFaseRoundEnum) i;
+                var roundMatches = Model.EliminationFase.Where(s => s.EliminationFaaseRound == eliminationRoundValue)
+                    .OrderBy(s => s.RoundIndex);
+            
+
+            @foreach (var round in roundMatches)
+            {
+                <ul class="list-inline">
+                    <li>@round.Match.HomeTeam.TeamName</li>
+                    <li>@round.Match.HomeTeamScore</li>
+                    <li>vs</li>
+                    <li>@round.Match.AwayTeamScore</li>
+                    <li>@round.Match.AwayTeam.TeamName</li>
+                </ul>
+            }
+        }
+    </div>
+</div>
+
