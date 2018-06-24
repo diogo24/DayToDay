@@ -106,6 +106,7 @@ namespace DailyManagementTemplate.Models
         public int? AwayTeamScore { get; set; }
         public string Day { get; internal set; }
         public string Date { get; internal set; }
+        public int Number { get; internal set; }
     }
 
     public class TeamViewModel {

@@ -77,8 +77,9 @@ namespace DailyManagementTemplate.Controllers
                 SetAwayTeam(match, groupMatchViewModel.Match);
                 SetScore(match, groupMatchViewModel.Match);
 
-                groupMatchViewModel.Match.Day  = day;
-                groupMatchViewModel.Match.Date = date;
+                groupMatchViewModel.Match.Day    = day;
+                groupMatchViewModel.Match.Date   = date;
+                groupMatchViewModel.Match.Number = matchNumber;
 
                 _worldCupModel.GroupMatches.Add(groupMatchViewModel);
                 var teams = _dicGroupTeams[groupMatchViewModel.GroupLetter];
@@ -200,6 +201,131 @@ namespace DailyManagementTemplate.Controllers
         private ICollection<EliminationFaseViewModel> GetEliminationFaseRounds()
         {
             throw new NotImplementedException();
+        }
+
+        [HttpGet]
+        public IActionResult UpdateScore(string homeTeam, string awayTeam)
+        {
+            var viewModel = new UpdateScoreViewModel();
+            viewModel.HomeTeam = homeTeam;
+            viewModel.AwayTeam = awayTeam;
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateScore(UpdateScoreViewModel viewModel)
+        {
+            if (ModelState.IsValid
+                && !string.IsNullOrEmpty(viewModel.HomeTeam)
+                && viewModel.HomeTeamScore.HasValue
+                && !string.IsNullOrEmpty(viewModel.AwayTeam)
+                && viewModel.AwayTeamScore.HasValue
+                )
+            {
+                if (UpdateMatchScore(viewModel))
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+
+                ModelState.AddModelError(string.Empty, "Error updating match score");
+            }
+            
+            return View(viewModel);
+        }
+
+        private bool UpdateMatchScore(UpdateScoreViewModel viewModel)
+        {
+            var data = ReadFile();
+            var updatedFile = ParseFileForMatchScore(data, viewModel);
+
+            return UpdateFile(updatedFile);
+        }
+
+        private bool UpdateFile(StringBuilder updatedFile)
+        {
+            string result = string.Empty;
+
+            using (var streamWriter= new StreamWriter(@"wwwroot\docs\World Cup 2018 Games List.csv"))
+            {
+                streamWriter.Write(updatedFile.ToString());
+            }
+
+            return true;
+        }
+
+        private StringBuilder ParseFileForMatchScore(string worldCupFileData, UpdateScoreViewModel viewModel)
+        {
+            var sb = new StringBuilder();
+
+            using (var sr = new StringReader(worldCupFileData))
+            {
+                string line;
+
+                // load header
+                line = sr.ReadLine();
+                sb.AppendLine(line);
+                var matchFound = false;
+
+                while ((line = sr.ReadLine()) != null && !matchFound)
+                {
+                    if(line.IndexOf('(') < 0) { 
+                        var split = line.Split(',');
+                        var match = split[3];
+                    
+                        var homeTeamIndex = match.IndexOf(viewModel.HomeTeam);
+                        var awayTeamIndex = match.IndexOf(viewModel.AwayTeam);
+
+                        if (homeTeamIndex > 0 
+                            && awayTeamIndex > 0
+                            && homeTeamIndex < awayTeamIndex)
+                        {
+                            line = line.Replace(viewModel.AwayTeam, $"{viewModel.AwayTeam} ({viewModel.HomeTeamScore}?{viewModel.AwayTeamScore})");
+                            matchFound = true;
+                        }
+                    }
+
+                    sb.AppendLine(line);
+                }
+
+                if (line != null) {
+                    sb.AppendLine(line);
+
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        sb.AppendLine(line);
+                    }
+                }                
+            }
+
+            return sb;
+        }
+
+        private string GetHomeTeam(string match)
+        {
+            var startIndex = match.IndexOf(']');
+            var endIndex = match.IndexOf('-');
+            var homeTeam = match.Substring((startIndex + 1), (endIndex - startIndex - 1));
+            return homeTeam.Trim();
+        }
+
+        private string GetAwayTeam(string match)
+        {
+
+            var startIndex = match.IndexOf('-');
+            var endIndex = match.IndexOf('(');
+
+            if (endIndex < 0)
+            {
+                var awayTeam = match.Substring((startIndex + 1));
+                return awayTeam.Trim();
+            }
+            else
+            {
+                var awayTeam = match.Substring((startIndex + 1), (endIndex - startIndex - 1));
+                return awayTeam.Trim();
+            }
+
         }
     }
 }

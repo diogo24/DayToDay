@@ -16,6 +16,15 @@
             <li>vs</li>
             <li>@groupMatch.Match.AwayTeamScore</li>
             <li>@groupMatch.Match.AwayTeam.TeamName</li>
+
+            @if(!groupMatch.Match.HomeTeamScore.HasValue) { 
+                <li>
+                    <a href="@Url.Action("UpdateScore", "WorldCup", new { HomeTeam = groupMatch.Match.HomeTeam.TeamName, AwayTeam = groupMatch.Match.AwayTeam.TeamName })">
+                        <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+                    </a>
+                </li>
+            }
+
         </ul>
         }
     </div>

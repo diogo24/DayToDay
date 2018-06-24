@@ -1,0 +1,30 @@
+﻿@model UpdateScoreViewModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h2>Update Score: @Model.HomeTeam vs @Model.AwayTeam</h2>
+
+
+@using (Html.BeginForm("UpdateScore", "WorldCup", FormMethod.Post, new { @class = "form-inline" }))
+{
+
+    @Html.AntiForgeryToken()
+
+    @Html.HiddenFor(s => s.HomeTeam)
+    @Html.HiddenFor(s => s.AwayTeam)
+
+    <div class="form-group">
+        @Html.Label(Model.HomeTeam)
+        @Html.EditorFor(s => s.HomeTeamScore, new { @class="form-control"})
+    </div>
+    <div class="form-control">
+        @Html.Label("vs")
+    </div>
+    <div class="form-group">
+        @Html.Label(Model.AwayTeam)
+        @Html.EditorFor(s => s.AwayTeamScore, new { @class = "form-control" })
+    </div>
+    <button type="submit" class="btn btn-default">Save</button>
+}
