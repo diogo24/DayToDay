@@ -154,33 +154,56 @@ namespace DailyManagementTemplate.Controllers
 
                 var groupMatchs = _worldCupModel.GroupMatches.Where(s => s.GroupLetter == groupLetter);
 
-                var dicTeamsPoints = teams.ToDictionary(k => k.TeamName, v => 0);
+                var dicTeamsPoints = teams.ToDictionary(k => k.TeamName,
+                    v => new GroupRowViewModel { Team = v, Points = 0 });
 
                 foreach (var groupMatch in groupMatchs)
                 {
                     if(groupMatch.Match.HomeTeamScore.HasValue && groupMatch.Match.AwayTeamScore.HasValue) { 
                         if(groupMatch.Match.HomeTeamScore == groupMatch.Match.AwayTeamScore)
                         {
-                            dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName] += 1;
-                            dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName] += 1;
+                            dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName].Points += 1;
+                            dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName].Points += 1;
+
+                            dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName].Draws += 1;
+                            dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName].Draws += 1;
                         }
                         else if(groupMatch.Match.HomeTeamScore > groupMatch.Match.AwayTeamScore)
                         {
-                            dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName] += 3;
+                            dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName].Points += 3;
+                            dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName].Wins += 1;
                         }
                         else if (groupMatch.Match.HomeTeamScore < groupMatch.Match.AwayTeamScore)
                         {
-                            dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName] += 3;
+                            dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName].Points += 3;
+                            dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName].Wins += 1;
                         }
+
+                        dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName].GoalsFor     += groupMatch.Match.HomeTeamScore.Value;
+                        dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName].GoalsAgainst += groupMatch.Match.AwayTeamScore.Value;
+
+                        dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName].GoalsFor     += groupMatch.Match.AwayTeamScore.Value;
+                        dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName].GoalsAgainst += groupMatch.Match.HomeTeamScore.Value;
+
+                        dicTeamsPoints[groupMatch.Match.HomeTeam.TeamName].GamesPlayed += 1;
+                        dicTeamsPoints[groupMatch.Match.AwayTeam.TeamName].GamesPlayed += 1;
+
                     }
                 }
 
                 var model = new GroupTableViewModel();
                 model.GroupLetter = groupLetter;
 
-                foreach (var team in dicTeamsPoints.OrderByDescending(s => s.Value))
+                var teamsSorted = dicTeamsPoints.OrderByDescending(s => s.Value.Points)
+                    .ThenByDescending(s => s.Value.GoalsFor - s.Value.GoalsAgainst)
+                    .ThenByDescending(s => s.Value.GoalsFor);
+
+                var index = 1;
+                foreach (var team in teamsSorted)
                 {
-                    model.GroupRows.Add(new GroupRowViewModel { Team = new TeamViewModel { TeamName = team.Key }, Points = team.Value });
+                    team.Value.GroupPosition = (GroupPositionEnum)index;
+                    model.GroupRows.Add(team.Value);
+                    index++;
                 }                
 
                 _worldCupModel.Groups.Add(model);
@@ -301,6 +324,15 @@ namespace DailyManagementTemplate.Controllers
                 return awayTeam.Trim();
             }
 
+        }
+
+        [HttpGet]
+        public IActionResult GroupsTablesDetails()
+        {
+            GetWorldCupMatches();
+            GetWorldCupGroups();
+
+            return View(_worldCupModel);
         }
     }
 }

@@ -29,6 +29,7 @@
         }
     </div>
     <div class="col-md-4">
+        <p><a href="@Url.Action("GroupsTablesDetails", "WorldCup")" class="btn btn-primary">Groups Tables Details</a></p>
         @foreach (var group in Model.Groups.OrderBy(s => (int)s.GroupLetter))
         {
             <h3>@(group.GroupLetter)</h3>
