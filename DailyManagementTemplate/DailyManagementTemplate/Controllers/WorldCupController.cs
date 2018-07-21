@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DailyManagementTemplate.Models;
 using System.IO;
 using System.Text;
+using DailyManagementTemplate.Helpers;
 
 namespace DailyManagementTemplate.Controllers
 {
@@ -13,6 +14,7 @@ namespace DailyManagementTemplate.Controllers
     {
         private WorldCupViewModel _worldCupModel;
         private Dictionary<GroupLetterEnum, IList<TeamViewModel>> _dicGroupTeams;
+        private WorldCupDataEliminationFaseMatchesHelper _worldCupDataEliminationFaseMatchesHelper;
 
         public WorldCupController()
         {
@@ -22,6 +24,8 @@ namespace DailyManagementTemplate.Controllers
             {
                 _dicGroupTeams.Add(groupLetter, new List<TeamViewModel>());
             }
+
+            _worldCupDataEliminationFaseMatchesHelper = new WorldCupDataEliminationFaseMatchesHelper();
         }
 
         public IActionResult Index() {
@@ -29,7 +33,7 @@ namespace DailyManagementTemplate.Controllers
 
             GetWorldCupMatches();
             GetWorldCupGroups();
-            //worldCupModel.EliminationFase = GetEliminationFaseRounds();
+            _worldCupDataEliminationFaseMatchesHelper.GetEliminationFaseRounds(_worldCupModel);
             _worldCupModel.NumbertOfRounds = Enum.GetValues(typeof(EliminationFaseRoundEnum)).Length;
 
             return View(_worldCupModel);
@@ -37,14 +41,14 @@ namespace DailyManagementTemplate.Controllers
 
         private void GetWorldCupMatches()
         {
-            var worldCupFileData = ReadFile();
+            var worldCupFileData = WorldCupFileIOHelper.ReadFile();
 
-            ParseWorldCupData(worldCupFileData);
+            ParseWorldCupDataGroupMatches(worldCupFileData);
 
             //throw new NotImplementedException();
         }
 
-        private void ParseWorldCupData(string worldCupFileData)
+        private void ParseWorldCupDataGroupMatches(string worldCupFileData)
         {
             using (var sr = new StringReader(worldCupFileData))
             {
@@ -61,12 +65,12 @@ namespace DailyManagementTemplate.Controllers
                     var match       = split[3];
                     var matchNumber = int.Parse(split[4]);
 
-                    MatchParse(match, matchNumber, day, date);
+                    MatchParseForGroupMatches(match, matchNumber, day, date);
                 }
             }
         }
 
-        private void MatchParse(string match, int matchNumber, string day, string date)
+        private void MatchParseForGroupMatches(string match, int matchNumber, string day, string date)
         {
             if (matchNumber <= 48)
             {
@@ -92,10 +96,7 @@ namespace DailyManagementTemplate.Controllers
                     teams.Add(groupMatchViewModel.Match.AwayTeam);
                 }
             }
-            else {
-
-            }
-        }
+        }        
 
         private void SetScore(string match, MatchViewModel matchViewModel)
         {
@@ -142,18 +143,6 @@ namespace DailyManagementTemplate.Controllers
             groupMatchViewModel.GroupLetter = Enum.Parse<GroupLetterEnum>(groupLetter);            
         }
 
-        private static string ReadFile()
-        {
-            string result = string.Empty;
-
-            using (var streamReader = new StreamReader(@"wwwroot\docs\World Cup 2018 Games List.csv"))
-            {
-                result = streamReader.ReadToEnd();
-            }
-
-            return result;
-        }
-
         private void GetWorldCupGroups()
         {
             _worldCupModel.Groups = new List<GroupTableViewModel>();
@@ -197,11 +186,7 @@ namespace DailyManagementTemplate.Controllers
                 _worldCupModel.Groups.Add(model);
             }
         }
-
-        private ICollection<EliminationFaseViewModel> GetEliminationFaseRounds()
-        {
-            throw new NotImplementedException();
-        }
+        
 
         [HttpGet]
         public IActionResult UpdateScore(string homeTeam, string awayTeam)
@@ -236,23 +221,13 @@ namespace DailyManagementTemplate.Controllers
 
         private bool UpdateMatchScore(UpdateScoreViewModel viewModel)
         {
-            var data = ReadFile();
+            var data = WorldCupFileIOHelper.ReadFile();
             var updatedFile = ParseFileForMatchScore(data, viewModel);
 
-            return UpdateFile(updatedFile);
+            return WorldCupFileIOHelper.UpdateFile(updatedFile);
         }
 
-        private bool UpdateFile(StringBuilder updatedFile)
-        {
-            string result = string.Empty;
 
-            using (var streamWriter= new StreamWriter(@"wwwroot\docs\World Cup 2018 Games List.csv"))
-            {
-                streamWriter.Write(updatedFile.ToString());
-            }
-
-            return true;
-        }
 
         private StringBuilder ParseFileForMatchScore(string worldCupFileData, UpdateScoreViewModel viewModel)
         {

@@ -37,6 +37,11 @@ namespace DailyManagementTemplate.Models
 
     public class EliminationFaseViewModel
     {
+        public EliminationFaseViewModel()
+        {
+            Match = new MatchViewModel();
+        }
+
         public MatchViewModel Match { get; set; }
 
         public EliminationFaseRoundEnum EliminationFaaseRound { get; set; }
