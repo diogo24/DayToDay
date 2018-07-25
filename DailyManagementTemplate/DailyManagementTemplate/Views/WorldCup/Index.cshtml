@@ -19,7 +19,7 @@
 
             @if(!groupMatch.Match.HomeTeamScore.HasValue) { 
                 <li>
-                    <a href="@Url.Action("UpdateScore", "WorldCup", new { HomeTeam = groupMatch.Match.HomeTeam.TeamName, AwayTeam = groupMatch.Match.AwayTeam.TeamName })">
+                    <a href="@Url.Action("UpdateScore", "WorldCup", new { HomeTeam = groupMatch.Match.HomeTeam.TeamName, AwayTeam = groupMatch.Match.AwayTeam.TeamName, MatchNumber = groupMatch.Match.Number })">
                         <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                     </a>
                 </li>
@@ -82,10 +82,29 @@
             {
                 <ul class="list-inline">
                     <li>@round.Match.HomeTeam.TeamName</li>
-                    <li>@round.Match.HomeTeamScore</li>
+                    @if (round.HasPenalties)
+                    {
+                        <li>@(round.Match.HomeTeamScore)(@(round.Match.HomeTeamScorePenalties))</li>
+                    }
+                    else { 
+                        <li>@(round.Match.HomeTeamScore)</li>
+                    }
                     <li>vs</li>
-                    <li>@round.Match.AwayTeamScore</li>
+                    @if (round.HasPenalties)
+                    {
+                        <li>@(round.Match.AwayTeamScore)(@(round.Match.AwayTeamScorePenalties))</li>
+                    }
+                    else { 
+                        <li>@(round.Match.AwayTeamScore)</li>
+                    }
                     <li>@round.Match.AwayTeam.TeamName</li>
+                    @if(!round.Match.HomeTeamScore.HasValue) { 
+                        <li>
+                            <a href="@Url.Action("UpdateScoreElimination", "WorldCup", new { HomeTeam = round.Match.HomeTeam.TeamName, AwayTeam = round.Match.AwayTeam.TeamName, MatchNumber = round.Match.Number })">
+                                <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+                            </a>
+                        </li>
+                    }
                 </ul>
             }
         }

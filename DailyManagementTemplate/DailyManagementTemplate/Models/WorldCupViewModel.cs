@@ -47,6 +47,12 @@ namespace DailyManagementTemplate.Models
         public EliminationFaseRoundEnum EliminationFaaseRound { get; set; }
 
         public int RoundIndex { get; set; }
+
+        public bool HasPenalties { get {
+                return
+                    Match.HomeTeamScore.HasValue
+                    && Match.HomeTeamScore == Match.AwayTeamScore;
+            } }
     }
 
     public enum EliminationFaseRoundEnum {
@@ -105,10 +111,13 @@ namespace DailyManagementTemplate.Models
     public class MatchViewModel {
         public TeamViewModel HomeTeam { get; set; }
         public int? HomeTeamScore { get; set; }
+        public int? HomeTeamScorePenalties { get; set; }
 
 
         public TeamViewModel AwayTeam { get; set; }
         public int? AwayTeamScore { get; set; }
+        public int? AwayTeamScorePenalties { get; set; }
+
         public string Day { get; internal set; }
         public string Date { get; internal set; }
         public int Number { get; internal set; }

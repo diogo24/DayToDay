@@ -334,5 +334,107 @@ namespace DailyManagementTemplate.Controllers
 
             return View(_worldCupModel);
         }
+
+
+        [HttpGet]
+        public IActionResult UpdateScoreElimination(string homeTeam, string awayTeam, int matchNumber)
+        {
+            var viewModel = new UpdateScoreViewModel();
+            viewModel.HomeTeam = homeTeam;
+            viewModel.AwayTeam = awayTeam;
+            viewModel.MatchNumber = matchNumber;
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateScoreElimination(UpdateScoreViewModel viewModel)
+        {
+            if (ModelState.IsValid
+                && !string.IsNullOrEmpty(viewModel.HomeTeam)
+                && viewModel.HomeTeamScore.HasValue
+                && !string.IsNullOrEmpty(viewModel.AwayTeam)
+                && viewModel.AwayTeamScore.HasValue
+                )
+            {
+
+                if (viewModel.HomeTeamScore != viewModel.AwayTeamScore
+                    // check for score errors
+                    || 
+                        (
+                        viewModel.HomeTeamScore == viewModel.AwayTeamScore
+                        && viewModel.HomeTeamScorePenalties.HasValue
+                        && viewModel.AwayTeamScorePenalties.HasValue
+                        && viewModel.HomeTeamScorePenalties != viewModel.AwayTeamScorePenalties
+
+                        )
+                    )
+                {                         
+                    if (UpdateMatchScoreElimination(viewModel))
+                    {
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
+
+                ModelState.AddModelError(string.Empty, "Error updating match score");
+            }
+
+            return View(viewModel);
+        }
+
+        private bool UpdateMatchScoreElimination(UpdateScoreViewModel viewModel)
+        {
+            var data        = WorldCupFileIOHelper.ReadFile();
+            var updatedFile = ParseFileForEliminationMatchScore(data, viewModel);
+
+            return WorldCupFileIOHelper.UpdateFile(updatedFile);
+        }
+
+        private StringBuilder ParseFileForEliminationMatchScore(string worldCupFileData, UpdateScoreViewModel viewModel)
+        {
+            var sb = new StringBuilder();
+
+            using (var sr = new StringReader(worldCupFileData))
+            {
+                string line;
+
+                // load header
+                line = sr.ReadLine();
+                sb.AppendLine(line);
+                var matchFound = false;
+
+                while ((line = sr.ReadLine()) != null && !matchFound)
+                {
+                    if (line.IndexOf('(') < 0)
+                    {
+                        var split       = line.Split(',');
+                        var match       = split[3];
+                        var matchNumber = int.Parse(split[4]);
+
+                        if(matchNumber == viewModel.MatchNumber)
+                        {
+                            //var updatedMatch = match.Replace("-", $"|{viewModel.HomeTeam}| - |{viewModel.AwayTeam}|") + $" ({viewModel.HomeTeamScore}?{viewModel.AwayTeamScore}) ({viewModel.HomeTeamScorePenalties}?{viewModel.AwayTeamScorePenalties})";
+                            var updatedMatch = match + $" ({viewModel.HomeTeamScore}?{viewModel.AwayTeamScore}) ({viewModel.HomeTeamScorePenalties}?{viewModel.AwayTeamScorePenalties})";
+                            line = line.Replace(match, updatedMatch);
+                            matchFound = true;
+                        }
+                    }
+
+                    sb.AppendLine(line);
+                }
+
+                if (line != null)
+                {
+                    sb.AppendLine(line);
+
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        sb.AppendLine(line);
+                    }
+                }
+            }
+
+            return sb;
+        }
     }
 }
